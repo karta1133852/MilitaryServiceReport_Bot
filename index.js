@@ -108,7 +108,7 @@ async function setDateToSheet(strDates) {
   try {
     const dateSheet = await loadSheet(1);
     await dateSheet.clear();
-    dateSheet.setHeaderRow([ 'date' ]);
+    await dateSheet.setHeaderRow([ 'date' ]);
 
     await dateSheet.addRows(strDates.map(d => {
       return { date: d };
