@@ -15,9 +15,7 @@ const config = {
   channelSecret: process.env.CHANNEL_SECRET,
 };
 
-// create LINE SDK client
-const client = new line.Client(config);
-
+/*
 // create Express app
 // about Express itself: https://expressjs.com/
 const app = express();
@@ -34,7 +32,7 @@ app.post('/callback', line.middleware(config), (req, res) => {
     });
 });
 
-/*
+
 // event handler
 function handleEvent(event) {
   if (event.type !== 'message' || event.message.type !== 'text') {
@@ -54,13 +52,6 @@ const port = process.env.PORT || 3000;
 app.listen(port, () => {
   console.log(`listening on ${port}`);
 });*/
-
-/*client.pushMessage('bdhi3039',
-  {
-    type: 'text',
-    text: '幹你娘早安呀'
-  }
-);*/
 
 async function test() {
   const sheet_id = process.env.SHEET_ID;
@@ -106,10 +97,19 @@ async function test() {
       
     }
     
-    console.log(totalReport.body.contents[3]);
+    //console.log(totalReport.body.contents[3]);
     //await sheet.saveUpdatedCells();
 
-    console.log(reportTotalMessage);
+    // create LINE SDK client
+    const client = new line.Client(config);
+    client.pushMessage(process.env.GROUP_ID, totalReport)
+    .then(() => {
+
+    })
+    .catch((err) => {
+      console.log(err);
+    });
+    //console.log(reportTotalMessage);
   } catch (error) {
     console.log(error)
   }

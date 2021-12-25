@@ -3,6 +3,7 @@
 const line = require('@line/bot-sdk');
 const express = require('express');
 const { GoogleSpreadsheet } = require('google-spreadsheet');
+require('dotenv').config()
 
 // create LINE SDK config from env variables
 const config = {
@@ -38,7 +39,8 @@ function handleEvent(event) {
 
   // create a echoing text message
   const echo = { type: 'text', text: event.message.text };
-  console.log(event.source.groupId);
+  console.log('groupId: ' + event.source.groupId);
+  console.log('userId: ' + event.source.userId);
   let reportMessage = event.message.text.trim();
 
   if (filterReportMessage(reportMessage)) {
