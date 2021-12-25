@@ -19,7 +19,7 @@ const app = express();
 
 // register a webhook handler with middleware
 // about the middleware, please refer to doc
-app.post('/callback', line.middleware(config), async (req, res) => {
+app.post('/callback', line.middleware(config), (req, res) => {
   Promise
     .all(req.body.events.map(handleEvent))
     .then((result) => res.json(result))
@@ -30,7 +30,7 @@ app.post('/callback', line.middleware(config), async (req, res) => {
 });
 
 // event handler
-async function handleEvent(event) {
+function handleEvent(event) {
   if (event.type !== 'message' || event.message.type !== 'text') {
     // ignore non-text-message event
     return Promise.resolve(null);
@@ -38,9 +38,9 @@ async function handleEvent(event) {
 
   // create a echoing text message
   const echo = { type: 'text', text: event.message.text };
-
-  let message = event.message.text;
-  if (filterReportMessage(message)) {
+console.log('asdasdasdasd');
+  let reportMessage = event.message.text;
+  if (filterReportMessage(reportMessage)) {
     const sheet_id = process.env.SHEET_ID;
     const cellRange = 'A106:A118'
 
@@ -54,8 +54,8 @@ async function handleEvent(event) {
       await doc.loadInfo();
       const sheet = await doc.sheetsByIndex[0];
       await sheet.loadCells(cellRange);
-      sheet.getCellByA1('A'+ message.substring(0, 3)).value = message;
-      console.log('A'+ message.substring(0, 3));
+      sheet.getCellByA1('A'+ reportMessage.substring(0, 3)).value = reportMessage;
+      console.log('A'+ reportMessage.substring(0, 3));
 
       await sheet.saveUpdatedCells();
     } catch (err) {
@@ -63,7 +63,7 @@ async function handleEvent(event) {
     }
   }
 
-  return;// client.replyMessage(event.replyToken, echo);
+  return Promise.resolve(null);// client.replyMessage(event.replyToken, echo);
 }
 
 function filterReportMessage(message) {
