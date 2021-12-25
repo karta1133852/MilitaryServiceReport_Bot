@@ -1,5 +1,6 @@
-let test = '114 asdasdasda';
+let str = ' 　114 asdasd';
 
-const regex = new RegExp('\b[0-9]{3}.*');
+const regex = new RegExp('/\b[0-9]{3}.*/');
+const reg = /[0-9]{3}.*/;
 
-console.log(regex.test(test));
+console.log(reg.test(str.trim()));

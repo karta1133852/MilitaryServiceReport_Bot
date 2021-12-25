@@ -39,10 +39,7 @@ function handleEvent(event) {
   // create a echoing text message
   const echo = { type: 'text', text: event.message.text };
   
-  let reportMessage = event.message.text;
-
-  console.log(reportMessage);
-  console.log(filterReportMessage(reportMessage))
+  let reportMessage = event.message.text.trim();
 
   if (filterReportMessage(reportMessage)) {
     (async function() {
@@ -54,7 +51,7 @@ function handleEvent(event) {
 }
 
 function filterReportMessage(reportMessage) {
-  const regex = new RegExp('\b[0-9]{3}.*');
+  const regex = /[0-9]{3}.*/;
   return regex.test(reportMessage);
 }
 
@@ -73,7 +70,6 @@ async function writeToSheet(reportMessage) {
       const sheet = await doc.sheetsByIndex[0];
       await sheet.loadCells(cellRange);
       sheet.getCellByA1('A'+ reportMessage.substring(0, 3)).value = reportMessage;
-      console.log('A'+ reportMessage.substring(0, 3));
 
       await sheet.saveUpdatedCells();
     } catch (err) {
