@@ -25,7 +25,7 @@ const app = express();
 
 // register a webhook handler with middleware
 // about the middleware, please refer to doc
-app.post('/callback', line.middleware(config), (req, res) => {
+app.post('/callback', line.middleware(config), async (req, res) => {
   Promise
     .all(req.body.events.map(handleEvent))
     .then((result) => res.json(result))
@@ -36,7 +36,7 @@ app.post('/callback', line.middleware(config), (req, res) => {
 });
 
 // event handler
-function handleEvent(event) {
+async function handleEvent(event) {
   if (event.type !== 'message' || event.message.type !== 'text') {
     // ignore non-text-message event
     return Promise.resolve(null);
@@ -55,9 +55,10 @@ function handleEvent(event) {
     strDates.shift();
 
     let result;
-    (async function() {
+    result = await setDateToSheet(strDates);
+    /*(async function() {
       result = await setDateToSheet(strDates);
-    }());
+    }());*/
 
     if (result) {
       return client.replyMessage(event.replyToken, { type: 'text', text: '設定完成' });
