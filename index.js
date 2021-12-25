@@ -5,6 +5,10 @@ const express = require('express');
 const { GoogleSpreadsheet } = require('google-spreadsheet');
 require('dotenv').config()
 
+const totalReport = require('./reportFormat/total.json');
+const personReport = require('./reportFormat/person.json');
+const singleLine = require('./reportFormat/singleLine.json');
+
 // create LINE SDK config from env variables
 const config = {
   channelAccessToken: process.env.CHANNEL_ACCESS_TOKEN,
