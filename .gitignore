@@ -8,6 +8,4 @@ node_modules
 
 log
 
-.DS_Store
-
-.serverless
+.private_key
