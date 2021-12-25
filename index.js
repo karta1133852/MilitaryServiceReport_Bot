@@ -54,13 +54,16 @@ function handleEvent(event) {
     const strDates = reportMessage.split(' ');
     strDates.shift();
 
+    let result;
     (async function() {
-      await setDateToSheet(strDates);
+      result = await setDateToSheet(strDates);
     }());
 
-    /*} else {
+    if (result) {
+      return client.replyMessage(event.replyToken, { type: 'text', text: '設定完成' });
+    } else {
       return client.replyMessage(event.replyToken, { type: 'text', text: '日期格式錯誤' });
-    }*/
+    }
   }
 
   return Promise.resolve(null);// client.replyMessage(event.replyToken, echo);
@@ -110,6 +113,8 @@ async function setDateToSheet(strDates) {
     await dateSheet.addRows(strDates.map(d => {
       return { date: d };
     }));
+
+    return true;
   } catch (err) {
     console.log(err)
   }
