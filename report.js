@@ -58,8 +58,6 @@ async function test() {
   const CELL_RANGE = 'A106:A118'
   const MIN_NUMBER = 106, MAX_NUMBER = 118;
 
-  let reportTotalMessage = '';
-
   try {
     const doc = new GoogleSpreadsheet(sheet_id);
     await doc.useServiceAccountAuth({
@@ -73,24 +71,25 @@ async function test() {
 
     await sheet.loadCells(CELL_RANGE);
 
-    for (let i = MIN_NUMBER; i <= MAX_NUMBER; i++) {
-      const newPerson = {...personReport};
+    const reportTotalMessage = JSON.parse(JSON.stringify(totalReport));
+    for (let i = 110; i <= 115; i++) {
+      const newPerson = JSON.parse(JSON.stringify(personReport));
       let message = sheet.getCellByA1('A' + i).value;
       if (message === null) {
         newPerson.text = '' + i;
         newPerson.color = '#FF0000';
-        const newLine = {...singleLine};
-        newLine.contents[1].text = '';
-        totalReport.body.contents = totalReport.body.contents.concat([newPerson, newLine, newLine]);
+        const emptyLine = JSON.parse(JSON.stringify(singleLine));
+        emptyLine.text = ' ';
+        reportTotalMessage.body.contents = reportTotalMessage.body.contents.concat([newPerson, emptyLine, emptyLine]);
       } else {
         let splitedLines = message.trim().split(/\s*[\r\n]+\s*/g);
         newPerson.text = splitedLines.shift();
-        totalReport.body.contents.push(newPerson);
+        reportTotalMessage.body.contents.push(newPerson);
         splitedLines.forEach(m => {
           if (m !== null) {
-            const newLine = {...singleLine};
-            newLine.contents[1].text = m;
-            totalReport.body.contents.push(newLine);
+            const newLine = JSON.parse(JSON.stringify(singleLine));
+            newLine.text = (m === '') ? ' ' : m;
+            reportTotalMessage.body.contents.push(newLine);
           }
         });
       }
@@ -100,9 +99,11 @@ async function test() {
     //console.log(totalReport.body.contents[3]);
     //await sheet.saveUpdatedCells();
 
+    
+    console.log(JSON.stringify(reportTotalMessage));
     // create LINE SDK client
     const client = new line.Client(config);
-    client.pushMessage(process.env.GROUP_ID, totalReport)
+    client.pushMessage(process.env.GROUP_ID, reportTotalMessage)
     .then(() => {
 
     })

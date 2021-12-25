@@ -1,22 +1,9 @@
 {
-  "type": "box",
-  "layout": "baseline",
-  "spacing": "sm",
-  "contents": [
-    {
-      "type": "text",
-      "color": "#aaaaaa",
-      "size": "sm",
-      "flex": 1,
-      "text": " "
-    },
-    {
-      "type": "text",
-      "text": "回報內容",
-      "wrap": true,
-      "color": "#272727",
-      "size": "lg",
-      "flex": 5
-    }
-  ]
+  "type": "text",
+  "text": "回報內容",
+  "wrap": true,
+  "color": "#272727",
+  "size": "lg",
+  "flex": 5,
+  "offsetStart": "10%"
 }

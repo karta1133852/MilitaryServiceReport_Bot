@@ -74,9 +74,78 @@ async function writeToSheet(reportMessage) {
       sheet.getCellByA1('A'+ reportMessage.substring(0, 3)).value = reportMessage;
 
       await sheet.saveUpdatedCells();
+
+      // 執行
+(async function() {
+  await test();
+}());
     } catch (err) {
       console.log(err)
     }
+}
+
+async function test() {
+  const sheet_id = process.env.SHEET_ID;
+  const CELL_RANGE = 'A106:A118'
+  const MIN_NUMBER = 106, MAX_NUMBER = 118;
+
+  try {
+    const doc = new GoogleSpreadsheet(sheet_id);
+    await doc.useServiceAccountAuth({
+      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+    });
+
+    await doc.loadInfo();
+
+    const sheet = await doc.sheetsByIndex[0];
+
+    await sheet.loadCells(CELL_RANGE);
+
+    const reportTotalMessage = JSON.parse(JSON.stringify(totalReport));
+    for (let i = 110; i <= 115; i++) {
+      const newPerson = JSON.parse(JSON.stringify(personReport));
+      let message = sheet.getCellByA1('A' + i).value;
+      if (message === null) {
+        newPerson.text = '' + i;
+        newPerson.color = '#FF0000';
+        const emptyLine = JSON.parse(JSON.stringify(singleLine));
+        emptyLine.text = ' ';
+        reportTotalMessage.body.contents = reportTotalMessage.body.contents.concat([newPerson, emptyLine, emptyLine]);
+      } else {
+        let splitedLines = message.trim().split(/\s*[\r\n]+\s*/g);
+        newPerson.text = splitedLines.shift();
+        reportTotalMessage.body.contents.push(newPerson);
+        splitedLines.forEach(m => {
+          if (m !== null) {
+            const newLine = JSON.parse(JSON.stringify(singleLine));
+            newLine.text = (m === '') ? ' ' : m;
+            reportTotalMessage.body.contents.push(newLine);
+          }
+        });
+      }
+      
+    }
+    
+    //console.log(totalReport.body.contents[3]);
+    //await sheet.saveUpdatedCells();
+
+    
+    console.log(JSON.stringify(reportTotalMessage));
+    // create LINE SDK client
+    const client = new line.Client(config);
+    client.pushMessage(process.env.GROUP_ID, reportTotalMessage)
+    .then(() => {
+
+    })
+    .catch((err) => {
+      console.log(err);
+    });
+    //console.log(reportTotalMessage);
+  } catch (error) {
+    console.log(error)
+  }
+  
 }
 
 // listen on port
