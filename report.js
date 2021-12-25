@@ -2,6 +2,7 @@
 
 const line = require('@line/bot-sdk');
 const express = require('express');
+const { GoogleSpreadsheet } = require('google-spreadsheet');
 require('dotenv').config()
 
 // create LINE SDK config from env variables
@@ -50,9 +51,41 @@ app.listen(port, () => {
   console.log(`listening on ${port}`);
 });*/
 
-client.pushMessage('bdhi3039',
+/*client.pushMessage('bdhi3039',
   {
     type: 'text',
     text: '幹你娘早安呀'
   }
-);
+);*/
+
+async function test() {
+  const sheet_id = process.env.SHEET_ID;
+  const cellRange = 'A106:A118'
+
+  try {
+    const doc = new GoogleSpreadsheet(sheet_id);
+    await doc.useServiceAccountAuth({
+      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      private_key: process.env.GOOGLE_PRIVATE_KEY,
+    });
+
+    await doc.loadInfo();
+
+    // create a sheet and set the header row
+    const sheet = await doc.sheetsByIndex[0];
+    //const rows = await sheet.getRows();
+
+    await sheet.loadCells(cellRange);
+    //sheet.getCellByA1('A5').value = 'test';
+
+    await sheet.saveUpdatedCells();
+  } catch (error) {
+    console.log(error)
+  }
+  
+}
+
+// 執行
+(async function() {
+  await test();
+}());

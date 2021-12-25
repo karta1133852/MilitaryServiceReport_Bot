@@ -2,6 +2,7 @@
 
 const line = require('@line/bot-sdk');
 const express = require('express');
+const { GoogleSpreadsheet } = require('google-spreadsheet');
 
 // create LINE SDK config from env variables
 const config = {
@@ -29,7 +30,7 @@ app.post('/callback', line.middleware(config), (req, res) => {
 });
 
 // event handler
-function handleEvent(event) {
+async function handleEvent(event) {
   if (event.type !== 'message' || event.message.type !== 'text') {
     // ignore non-text-message event
     return Promise.resolve(null);
@@ -38,14 +39,35 @@ function handleEvent(event) {
   // create a echoing text message
   const echo = { type: 'text', text: event.message.text };
 
-  // use reply API
-  client.pushMessage('bdhi3039',
-  {
-    type: 'text',
-    text: '幹你娘早安呀'
+  let message = event.message.text;
+  if (filterReportMessage(message)) {
+    const sheet_id = process.env.SHEET_ID;
+    const cellRange = 'A106:A118'
+
+    try {
+      const doc = new GoogleSpreadsheet(sheet_id);
+      await doc.useServiceAccountAuth({
+        client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+        private_key: process.env.GOOGLE_PRIVATE_KEY,
+      });
+
+      await doc.loadInfo();
+      const sheet = await doc.sheetsByIndex[0];
+      await sheet.loadCells(cellRange);
+      sheet.getCellByA1('A'+ message.substring(0, 3)).value = message;
+
+      await sheet.saveUpdatedCells();
+    } catch (err) {
+      console.log(err)
+    }
   }
-);
-  return client.replyMessage(event.replyToken, echo);
+
+  return;// client.replyMessage(event.replyToken, echo);
+}
+
+function filterReportMessage(message) {
+  const regex = new RegExp('\b[0-9]{3}.*');
+  return regex.test(message);
 }
 
 // listen on port
