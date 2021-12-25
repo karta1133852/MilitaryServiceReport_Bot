@@ -74,7 +74,7 @@ function isSetDate(reportMessage) {
 }
 
 function checkDateFormat(strDate) {
-  const regex = /[0-9]{2}[\D][0-9]{2}/;
+  const regex = /[0-9]{2}[\D][0-9]{2}$/;
   return regex.test(strDate)
 }
 
