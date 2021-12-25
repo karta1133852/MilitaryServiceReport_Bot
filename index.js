@@ -50,7 +50,7 @@ function handleEvent(event) {
     (async function() {
       await recordToSheet(reportMessage);
     }());
-  } else if (isSetTime(reportMessage)) {
+  } else if (isSetDate(reportMessage)) {
     const strDates = reportMessage.split(' ');
     strDates.shift();
 
