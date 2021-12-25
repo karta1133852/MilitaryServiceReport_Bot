@@ -1,7 +1,6 @@
 'use strict';
 
 const line = require('@line/bot-sdk');
-const express = require('express');
 const { GoogleSpreadsheet } = require('google-spreadsheet');
 require('dotenv').config()
 
@@ -13,87 +12,94 @@ const SHEET_ID = process.env.SHEET_ID;
 const CELL_RANGE = 'A106:A118'
 const MIN_NUMBER = 106, MAX_NUMBER = 118;
 
+let doc = null;
+
 // create LINE SDK config from env variables
 const config = {
   channelAccessToken: process.env.CHANNEL_ACCESS_TOKEN,
   channelSecret: process.env.CHANNEL_SECRET,
 };
 
-/*
-// create Express app
-// about Express itself: https://expressjs.com/
-const app = express();
+async function pushReportMessage() {
+  try {
+    // 取得回報日期
+    const dateSheet = await loadSheet(1);
+    const rows = await dateSheet.getRows();
+    if (!checkDate(rows)) {
+      return;
+    }
 
-// register a webhook handler with middleware
-// about the middleware, please refer to doc
-app.post('/callback', line.middleware(config), (req, res) => {
-  Promise
-    .all(req.body.events.map(handleEvent))
-    .then((result) => res.json(result))
-    .catch((err) => {
-      console.error(err);
-      res.status(500).end();
-    });
-});
+    const sheet = await loadSheet(0);
 
+    await sheet.loadCells(CELL_RANGE);
 
-// event handler
-function handleEvent(event) {
-  if (event.type !== 'message' || event.message.type !== 'text') {
-    // ignore non-text-message event
-    return Promise.resolve(null);
+    //const reportTotalMessage = writeFlexMessage(sheet);
+    const reportTotalMessage = writeTextMessage(sheet);
+
+    await sheet.clear();
+
+    // create LINE SDK client
+    const client = new line.Client(config);
+    client.pushMessage(process.env.GROUP_ID, reportTotalMessage);
+    //console.log(reportTotalMessage);
+  } catch (error) {
+    console.log(error)
   }
-
-  // create a echoing text message
-  const echo = { type: 'text', text: event.message.text };
-
-  // use reply API
-  return client.replyMessage(event.replyToken, echo);
+  
 }
 
-// listen on port
-const port = process.env.PORT || 3000;
-app.listen(port, () => {
-  console.log(`listening on ${port}`);
-});*/
+function checkDate(rows) {
+  let result = false;
 
-async function test() {
+  const date = new Date();
+  date.setHours(date.getHours()+8);
+  let strTime = date.toISOString();
+
+  for (let i = 0; i < rows.length; i++) {
+    const a1 = rows[i].date.split(/[\D]/);
+    const a2 = strTime.split(/[\D]/);
+    if (a1[0] === a2[1] && a1[1] === a2[2]) {
+      result = true;
+    }
+  }
+
+  return result;
+}
+
+async function loadDoc() {
+  if (doc)
+    return;
+  
   try {
-    const doc = new GoogleSpreadsheet(SHEET_ID);
+    doc = new GoogleSpreadsheet(SHEET_ID);
     await doc.useServiceAccountAuth({
       client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
       private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
     });
 
     await doc.loadInfo();
+    return doc;
 
-    const sheet = await doc.sheetsByIndex[0];
-
-    await sheet.loadCells(CELL_RANGE);
-
-    //const reportTotalMessage = writeFlexMessage(sheet);
-    const reportTotalMessage = writeTextMessage(sheet);
-    
-    
-    //console.log(totalReport.body.contents[3]);
-    //await sheet.saveUpdatedCells();
-
-    
-    //console.log(JSON.stringify(reportTotalMessage));
-    // create LINE SDK client
-    const client = new line.Client(config);
-    client.pushMessage(process.env.GROUP_ID, reportTotalMessage)
-    .then(() => {
-
-    })
-    .catch((err) => {
-      console.log(err);
-    });
-    //console.log(reportTotalMessage);
-  } catch (error) {
-    console.log(error)
+  } catch (err) {
+    console.log(err);
   }
+}
+
+async function loadSheet(sheetIndex) {
   
+  try {
+
+    if (doc === null) {
+      await loadDoc();
+    }
+    
+    const sheet = await doc.sheetsByIndex[sheetIndex];
+
+    return sheet;
+
+  } catch (err) {
+    console.log(err);
+  }
 }
 
 function writeFlexMessage(sheet) {
@@ -149,5 +155,5 @@ function writeTextMessage(sheet) {
 
 // 執行
 (async function() {
-  await test();
+  await pushReportMessage();
 }());

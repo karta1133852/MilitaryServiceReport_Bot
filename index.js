@@ -5,9 +5,10 @@ const express = require('express');
 const { GoogleSpreadsheet } = require('google-spreadsheet');
 require('dotenv').config()
 
-const totalReport = require('./reportFormat/total.json');
-const personReport = require('./reportFormat/person.json');
-const singleLine = require('./reportFormat/singleLine.json');
+const SHEET_ID = process.env.SHEET_ID;
+const CELL_RANGE = 'A106:A118'
+
+let doc = null;
 
 // create LINE SDK config from env variables
 const config = {
@@ -41,16 +42,25 @@ function handleEvent(event) {
     return Promise.resolve(null);
   }
 
-  // create a echoing text message
-  const echo = { type: 'text', text: event.message.text };
   console.log('groupId: ' + event.source.groupId);
   console.log('userId: ' + event.source.userId);
   let reportMessage = event.message.text.trim();
 
   if (filterReportMessage(reportMessage)) {
     (async function() {
-      await writeToSheet(reportMessage);
+      await recordToSheet(reportMessage);
     }());
+  } else if (isSetTime(reportMessage)) {
+    const strDates = reportMessage.split(' ');
+    strDates.shift();
+
+    (async function() {
+      await setDateToSheet(strDates);
+    }());
+
+    /*} else {
+      return client.replyMessage(event.replyToken, { type: 'text', text: '日期格式錯誤' });
+    }*/
   }
 
   return Promise.resolve(null);// client.replyMessage(event.replyToken, echo);
@@ -61,95 +71,84 @@ function filterReportMessage(reportMessage) {
   return regex.test(reportMessage);
 }
 
-async function writeToSheet(reportMessage) {
-  const sheet_id = process.env.SHEET_ID;
-    const CELL_RANGE = 'A106:A118'
-
-    try {
-      const doc = new GoogleSpreadsheet(sheet_id);
-      await doc.useServiceAccountAuth({
-        client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-        private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
-      });
-
-      await doc.loadInfo();
-      const sheet = await doc.sheetsByIndex[0];
-      await sheet.loadCells(CELL_RANGE);
-      sheet.getCellByA1('A'+ reportMessage.substring(0, 3)).value = reportMessage;
-
-      await sheet.saveUpdatedCells();
-
-      // 執行
-(async function() {
-  await test();
-}());
-    } catch (err) {
-      console.log(err)
-    }
+function isSetDate(reportMessage) {
+  return reportMessage.substring(0, 4) === '設定日期';
 }
 
-async function test() {
-  const sheet_id = process.env.SHEET_ID;
-  const CELL_RANGE = 'A106:A118'
-  const MIN_NUMBER = 106, MAX_NUMBER = 118;
+function checkDateFormat(strDate) {
+  const regex = /[0-9]{2}[\D][0-9]{2}/;
+  return regex.test(strDate)
+}
+
+async function recordToSheet(reportMessage) {
 
   try {
-    const doc = new GoogleSpreadsheet(sheet_id);
+    const sheet = await loadSheet(0);
+    await sheet.loadCells(CELL_RANGE);
+    sheet.getCellByA1('A'+ reportMessage.substring(0, 3)).value = reportMessage;
+
+    await sheet.saveUpdatedCells();
+
+  } catch (err) {
+    console.log(err)
+  }
+}
+
+async function setDateToSheet(strDates) {
+  
+  for (let i = 0; i < strDates.length; i++) {
+    if (!checkDateFormat(strDates[i])) {
+      return false;
+    }
+  }
+
+  try {
+    const dateSheet = await loadSheet(1);
+    await dateSheet.clear();
+    dateSheet.setHeaderRow([ 'date' ]);
+
+    await dateSheet.addRows(strDates.map(d => {
+      return { date: d };
+    }));
+  } catch (err) {
+    console.log(err)
+  }
+}
+
+async function loadDoc() {
+  if (doc)
+    return;
+  
+  try {
+    doc = new GoogleSpreadsheet(SHEET_ID);
     await doc.useServiceAccountAuth({
       client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
       private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
     });
 
     await doc.loadInfo();
+    return doc;
 
-    const sheet = await doc.sheetsByIndex[0];
+  } catch (err) {
+    console.log(err);
+  }
+}
 
-    await sheet.loadCells(CELL_RANGE);
+async function loadSheet(sheetIndex) {
+  
+  try {
 
-    const reportTotalMessage = JSON.parse(JSON.stringify(totalReport));
-    for (let i = 110; i <= 115; i++) {
-      const newPerson = JSON.parse(JSON.stringify(personReport));
-      let message = sheet.getCellByA1('A' + i).value;
-      if (message === null) {
-        newPerson.text = '' + i;
-        newPerson.color = '#FF0000';
-        const emptyLine = JSON.parse(JSON.stringify(singleLine));
-        emptyLine.text = ' ';
-        reportTotalMessage.body.contents = reportTotalMessage.body.contents.concat([newPerson, emptyLine, emptyLine]);
-      } else {
-        let splitedLines = message.trim().split(/\s*[\r\n]+\s*/g);
-        newPerson.text = splitedLines.shift();
-        reportTotalMessage.body.contents.push(newPerson);
-        splitedLines.forEach(m => {
-          if (m !== null) {
-            const newLine = JSON.parse(JSON.stringify(singleLine));
-            newLine.text = (m === '') ? ' ' : m;
-            reportTotalMessage.body.contents.push(newLine);
-          }
-        });
-      }
-      
+    if (doc === null) {
+      await loadDoc();
     }
     
-    //console.log(totalReport.body.contents[3]);
-    //await sheet.saveUpdatedCells();
+    const sheet = await doc.sheetsByIndex[sheetIndex];
 
-    
-    console.log(JSON.stringify(reportTotalMessage));
-    // create LINE SDK client
-    const client = new line.Client(config);
-    client.pushMessage(process.env.GROUP_ID, reportTotalMessage)
-    .then(() => {
+    return sheet;
 
-    })
-    .catch((err) => {
-      console.log(err);
-    });
-    //console.log(reportTotalMessage);
-  } catch (error) {
-    console.log(error)
+  } catch (err) {
+    console.log(err);
   }
-  
 }
 
 // listen on port
