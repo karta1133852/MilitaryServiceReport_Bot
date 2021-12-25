@@ -38,10 +38,24 @@ function handleEvent(event) {
 
   // create a echoing text message
   const echo = { type: 'text', text: event.message.text };
-console.log('asdasdasdasd');
+  console.log('asdasdasdasd');
   let reportMessage = event.message.text;
   if (filterReportMessage(reportMessage)) {
-    const sheet_id = process.env.SHEET_ID;
+    (async function() {
+      await writeToSheet(reportMessage);
+    }());
+  }
+
+  return Promise.resolve(null);// client.replyMessage(event.replyToken, echo);
+}
+
+function filterReportMessage(reportMessage) {
+  const regex = new RegExp('\b[0-9]{3}.*');
+  return regex.test(reportMessage);
+}
+
+async function writeToSheet(reportMessage) {
+  const sheet_id = process.env.SHEET_ID;
     const cellRange = 'A106:A118'
 
     try {
@@ -61,14 +75,6 @@ console.log('asdasdasdasd');
     } catch (err) {
       console.log(err)
     }
-  }
-
-  return Promise.resolve(null);// client.replyMessage(event.replyToken, echo);
-}
-
-function filterReportMessage(message) {
-  const regex = new RegExp('\b[0-9]{3}.*');
-  return regex.test(message);
 }
 
 // listen on port
