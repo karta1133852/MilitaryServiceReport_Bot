@@ -47,18 +47,12 @@ async function handleEvent(event) {
   let reportMessage = event.message.text.trim();
 
   if (filterReportMessage(reportMessage)) {
-    (async function() {
-      await recordToSheet(reportMessage);
-    }());
+    await recordToSheet(reportMessage);
   } else if (isSetDate(reportMessage)) {
     const strDates = reportMessage.split(' ');
     strDates.shift();
 
-    let result;
-    result = await setDateToSheet(strDates);
-    /*(async function() {
-      result = await setDateToSheet(strDates);
-    }());*/
+    let result = await setDateToSheet(strDates);
 
     if (result) {
       return client.replyMessage(event.replyToken, { type: 'text', text: '設定完成' });
@@ -71,7 +65,7 @@ async function handleEvent(event) {
 }
 
 function filterReportMessage(reportMessage) {
-  const regex = /[0-9]{3}.*/;
+  const regex = /^[0-9]{3}.*/;
   return regex.test(reportMessage);
 }
 
@@ -92,7 +86,7 @@ async function recordToSheet(reportMessage) {
     sheet.getCellByA1('A'+ reportMessage.substring(0, 3)).value = reportMessage;
 
     await sheet.saveUpdatedCells();
-
+    
   } catch (err) {
     console.log(err)
   }
