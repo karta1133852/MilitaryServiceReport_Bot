@@ -38,8 +38,12 @@ function handleEvent(event) {
 
   // create a echoing text message
   const echo = { type: 'text', text: event.message.text };
-  console.log('asdasdasdasd');
+  
   let reportMessage = event.message.text;
+
+  console.log(reportMessage);
+  console.log(filterReportMessage(reportMessage))
+
   if (filterReportMessage(reportMessage)) {
     (async function() {
       await writeToSheet(reportMessage);
