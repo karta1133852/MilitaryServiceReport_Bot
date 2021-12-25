@@ -1,0 +1,8 @@
+{
+  "type": "text",
+  "text": "000 姓名",
+  "wrap": true,
+  "color": "#272727",
+  "size": "lg",
+  "flex": 5
+}

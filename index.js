@@ -38,7 +38,7 @@ function handleEvent(event) {
 
   // create a echoing text message
   const echo = { type: 'text', text: event.message.text };
-  
+  console.log(event.source.groupId);
   let reportMessage = event.message.text.trim();
 
   if (filterReportMessage(reportMessage)) {
@@ -57,7 +57,7 @@ function filterReportMessage(reportMessage) {
 
 async function writeToSheet(reportMessage) {
   const sheet_id = process.env.SHEET_ID;
-    const cellRange = 'A106:A118'
+    const CELL_RANGE = 'A106:A118'
 
     try {
       const doc = new GoogleSpreadsheet(sheet_id);
@@ -68,7 +68,7 @@ async function writeToSheet(reportMessage) {
 
       await doc.loadInfo();
       const sheet = await doc.sheetsByIndex[0];
-      await sheet.loadCells(cellRange);
+      await sheet.loadCells(CELL_RANGE);
       sheet.getCellByA1('A'+ reportMessage.substring(0, 3)).value = reportMessage;
 
       await sheet.saveUpdatedCells();

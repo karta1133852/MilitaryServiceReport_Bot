@@ -1,0 +1,15 @@
+{
+  "type": "bubble",
+  "body": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "text",
+        "text": "休假回報",
+        "weight": "bold",
+        "size": "xl"
+      }
+    ]
+  }
+}
