@@ -55,6 +55,7 @@ async function handleEvent(event) {
       const sheet = await doc.sheetsByIndex[0];
       await sheet.loadCells(cellRange);
       sheet.getCellByA1('A'+ message.substring(0, 3)).value = message;
+      console.log('A'+ message.substring(0, 3));
 
       await sheet.saveUpdatedCells();
     } catch (err) {
