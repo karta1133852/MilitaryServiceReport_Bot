@@ -4,9 +4,9 @@ const line = require('@line/bot-sdk');
 const { GoogleSpreadsheet } = require('google-spreadsheet');
 require('dotenv').config()
 
-const totalReport = require('./reportFormat/total.json');
-const personReport = require('./reportFormat/person.json');
-const singleLine = require('./reportFormat/singleLine.json');
+const totalReport = require('../reportFormat/total.json');
+const personReport = require('../reportFormat/person.json');
+const singleLine = require('../reportFormat/singleLine.json');
 
 const SHEET_ID = process.env.SHEET_ID;
 const CELL_RANGE = 'A106:A118'
