@@ -74,6 +74,7 @@ async function handleEvent(event) {
     return replyLineMessage(event, result, '註冊完成', '註冊失敗');
 
   } else if (filterNameLists(receivedMessage)) {
+
     const tmp = receivedMessage.split(' ');
     tmp.shift();  // 丟掉開頭的指令
     const studentIds = tmp.filter((v, i) => i % 2 === 0);
@@ -81,11 +82,12 @@ async function handleEvent(event) {
     
     let result = await setNameLists(studentIds, strNameLists);
     return replyLineMessage(event, result, '設定成功', '設定失敗');
+
   } else if (filterDefaultReport(receivedMessage)) {
 
     let studentId = parseInt(receivedMessage.split(' ')[1]);
     let strDefaultReport = await getDefaultReport(studentId);
-    if (strDefaultReport === false) {
+    if (!strDefaultReport) {
       return client.replyMessage(event.replyToken, { type: 'text', text: '錯誤' });
     }
     await updateReportToDB(strDefaultReport, studentId);
@@ -170,41 +172,31 @@ async function registerGroup(groupId, startId, endId) {
   return res !== null;
 }
 
-// TODO db
 async function getDefaultReport(studentId) {
-  let strDefaultReport = '\n目前在家\n預計不出門\n無飲酒';
-  try {
-    const sheet = await loadSheet(3);
-    await sheet.loadCells(CELL_RANGE);
-    strDefaultReport = studentId + ' ' + sheet.getCellByA1('A'+ studentId).value + strDefaultReport;
 
-    return strDefaultReport;
-  } catch (err) {
-    console.log(err)
+  let strDefaultReport = '目前在家\n預計不出門\n無飲酒';
+  const sqlSelectName = `SELECT name FROM report_content WHERE student_id = ${studentId};`;
+
+  const res = await pgQuery(sqlSelectName);
+  if (res === null) {
     return false;
   }
+
+  return `${studentId} ${res.rows[0].name}\n${strDefaultReport}`;
 }
 
-// TODO db
 async function setPersonalState(studentIds, strStates) {
-  try {
-    if (studentIds.length !== strStates.length) {
-      return false;
-    }
-    
-    const sheet = await loadSheet(3);
-    await sheet.loadCells(CELL_RANGE);
 
-    for (let i = 0; i < studentIds.length; i++) {
-      sheet.getCellByA1('B'+ studentIds[i]).value = strStates[i];
-    }
-
-    await sheet.saveUpdatedCells();
-    return true;
-  } catch (err) {
-    console.log(err)
+  if (studentIds.length !== strStates.length) {
     return false;
   }
+
+  const strUpdateValues = studentIds.map((id, i) => `(${id}, '${strStates[i]}')`).join(', ');
+  const sqlUpdateDate = 'UPDATE report_content AS r SET state = c.state ' +
+    `FROM (VALUES ${strUpdateValues}) AS c(student_id, state) WHERE c.student_id = r.student_id;`;
+
+  const res = await pgQuery(sqlUpdateDate);
+  return res !== null;
 }
 
 async function setNameLists(studentIds, strNameLists) {
@@ -221,7 +213,7 @@ async function setNameLists(studentIds, strNameLists) {
 }
 
 async function updateReportToDB(receivedMessage, studentId) {
-  const sqlUpdateReport = `UPDATE report_content SET name = '${receivedMessage}' WHERE student_id = ${studentId}`;
+  const sqlUpdateReport = `UPDATE report_content SET content = '${receivedMessage}' WHERE student_id = ${studentId}`;
   const res = await pgQuery(sqlUpdateReport);
   return res !== null;
 }

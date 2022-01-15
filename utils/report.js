@@ -26,7 +26,7 @@ async function pushReportMessage() {
   try {
     // 取得回報日期
     const sqlSelectDate = 'SELECT date FROM report_date;';
-    let resDates = await pgQuery(sqlSelectDate);
+    const resDates = await pgQuery(sqlSelectDate);
 
     if (!checkDate(resDates.rows)) {
       return;
