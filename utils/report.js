@@ -21,8 +21,11 @@ const config = {
   channelSecret: process.env.CHANNEL_SECRET,
 };
 
-// TODO db
 async function pushReportMessage() {
+
+  // create LINE SDK client
+  const client = new line.Client(config);
+
   try {
     // 取得回報日期
     const sqlSelectDate = 'SELECT date FROM report_date;';
@@ -34,37 +37,28 @@ async function pushReportMessage() {
 
     // 統整訊息
     const sqlSelectPerson = 'SELECT * FROM report_content ORDER BY student_id ASC;';
-    const resPersons = await pgQuery(sqlSelectDate);
+    const resPersons = await pgQuery(sqlSelectPerson);
     const sqlSelectGroup = 'SELECT * FROM group_info ORDER BY start_id ASC;';
-    const resGroups = await pgQuery(sqlSelectDate);
+    const resGroups = await pgQuery(sqlSelectGroup);
 
-    const resPersonsByGroup = [];
     // 每個群組統整一遍
     for (let i = 0; i < resGroups.rows.length; i++) {
       const group = resGroups.rows[i];
       const startId = group.start_id;
       const endId = group.end_id;
-      resPersonsByGroup.push(resPersons.rows.filter(p => p.student_id >= startId && p.student_id <= endId))
-      // 檢查是否有特殊狀態
-      //const personalStates = getPersonalState(resPersons);
+
+      const resPersonsByGroup = resPersons.rows.filter(p => p.student_id >= startId && p.student_id <= endId);
       const reportTotalMessage = writeTextMessage(resPersonsByGroup, endId - startId + 1);
+      // 推送訊息
+      client.pushMessage(group.group_id, reportTotalMessage);
     }
 
-    
-
-    //const reportTotalMessage = writeFlexMessage(sheet);
-    //const reportTotalMessage = writeTextMessage(sheet, personalStates);
-
-    await sheet.clear();
-
-    // create LINE SDK client
-    const client = new line.Client(config);
-    client.pushMessage(process.env.GROUP_ID, reportTotalMessage);
-    //console.log(reportTotalMessage);
+    // 清空所有回報紀錄
+    const sqlClearContent = 'UPDATE report_content SET content = NULL;';
+    const res = await pgQuery(sqlClearContent);
   } catch (error) {
     console.log(error)
   }
-  
 }
 
 function checkDate(rows) {
