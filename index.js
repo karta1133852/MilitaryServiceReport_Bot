@@ -47,7 +47,7 @@ async function handleEvent(event) {
   let reportMessage = event.message.text.trim();
 
   if (filterReportMessage(reportMessage)) {
-    await reportToSheet(reportMessage);
+    await reportToSheet(reportMessage, reportMessage.substring(0, 3));
   } else if (isSetDate(reportMessage)) {
     const strDates = reportMessage.split(' ');
     strDates.shift();
@@ -64,8 +64,9 @@ async function handleEvent(event) {
   } else if (filterNameLists(reportMessage)) {
     // TODO
   } else if (filterDefaultReport(reportMessage)) {
-    let strDefaultReport = getDefaultReport(reportMessage.split(' ')[1]);
-    await reportToSheet(strDefaultReport);
+    let studentId = parseInt(reportMessage.split(' ')[1]);
+    let strDefaultReport = getDefaultReport(studentId);
+    await reportToSheet(strDefaultReport, studentId);
     return client.replyMessage(event.replyToken, { type: 'text', text: strDefaultReport });
   }
 
@@ -121,12 +122,12 @@ async function getDefaultReport(studentId) {
   }
 }
 
-async function reportToSheet(reportMessage) {
+async function reportToSheet(reportMessage, studentId) {
   // TODO db
   try {
     const sheet = await loadSheet(0);
     await sheet.loadCells(CELL_RANGE);
-    sheet.getCellByA1('A'+ reportMessage.substring(0, 3)).value = reportMessage;
+    sheet.getCellByA1('A'+ studentId).value = reportMessage;
 
     await sheet.saveUpdatedCells();
     
