@@ -65,7 +65,8 @@ async function handleEvent(event) {
     // TODO
   } else if (filterDefaultReport(reportMessage)) {
     let studentId = parseInt(reportMessage.split(' ')[1]);
-    let strDefaultReport = getDefaultReport(studentId);
+    let strDefaultReport = await getDefaultReport(studentId);
+
     await reportToSheet(strDefaultReport, studentId);
     return client.replyMessage(event.replyToken, { type: 'text', text: strDefaultReport });
   }
@@ -114,8 +115,8 @@ async function getDefaultReport(studentId) {
   try {
     const sheet = await loadSheet(3);
     await sheet.loadCells(CELL_RANGE);
-    strDefaultReport = studentId + sheet.getCellByA1('A'+ studentId).value + strDefaultReport;
-    
+    strDefaultReport = studentId + ' ' + sheet.getCellByA1('A'+ studentId).value + strDefaultReport;
+
     return strDefaultReport;
   } catch (err) {
     console.log(err)
@@ -167,10 +168,10 @@ async function loadDoc() {
     doc = new GoogleSpreadsheet(SHEET_ID);
     await doc.useServiceAccountAuth({
       client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
     });
 
-    //await doc.loadInfo();
+    await doc.loadInfo();
     return doc;
 
   } catch (err) {
@@ -186,7 +187,7 @@ async function loadSheet(sheetIndex) {
       await loadDoc();
     }
     
-    await doc.loadInfo();
+    //await doc.loadInfo();
     const sheet = await doc.sheetsByIndex[sheetIndex];
 
     return sheet;
