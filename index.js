@@ -47,7 +47,7 @@ async function handleEvent(event) {
   let reportMessage = event.message.text.trim();
 
   if (filterReportMessage(reportMessage)) {
-    await recordToSheet(reportMessage);
+    await reportToSheet(reportMessage);
   } else if (isSetDate(reportMessage)) {
     const strDates = reportMessage.split(' ');
     strDates.shift();
@@ -63,26 +63,41 @@ async function handleEvent(event) {
     // TODO
   } else if (filterNameLists(reportMessage)) {
     // TODO
+  } else if (filterDefaultReport(reportMessage)) {
+    // TODO
   }
 
   return Promise.resolve(null);// client.replyMessage(event.replyToken, echo);
 }
 
 function filterReportMessage(reportMessage) {
+  // '000 ~~~~~'
   const regex = /^[0-9]{3}.*/;
   return regex.test(reportMessage);
 }
 
 function isSetDate(reportMessage) {
-  return reportMessage.substring(0, 4) === '設定日期';
+  // '設定日期 ~~~~~'
+  const regex = /^\u8a2d\u5b9a\u65e5\u671f[ \t]/;
+  return regex.test(reportMessage);
 }
 
 function filterGroupRegister(reportMessage) {
-  // TODO
+  // '註冊群組 000 000'
+  const regex = /^\u8a3b\u518a\u7fa4\u7d44[ \t][0-9]{3}[ \t][0-9]{3}/;
+  return regex.test(reportMessage);
 }
 
 function filterNameLists(reportMessage) {
-  // TODO
+  // '設定姓名 000 XXX'
+  const regex = /^\u8a2d\u5b9a\u59d3\u540d[ \t]/;
+  return regex.test(reportMessage);
+}
+
+function filterDefaultReport(reportMessage) {
+  // '預設回報格式 000'
+  const regex = /^\u9810\u8a2d\u56de\u5831\u683c\u5f0f[ \t][0-9]{3}/;
+  return regex.test(reportMessage);
 }
 
 function checkDateFormat(strDate) {
@@ -90,7 +105,7 @@ function checkDateFormat(strDate) {
   return regex.test(strDate)
 }
 
-async function recordToSheet(reportMessage) {
+async function reportToSheet(reportMessage) {
   // TODO db
   try {
     const sheet = await loadSheet(0);
