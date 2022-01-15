@@ -1,10 +1,10 @@
 {
-  "name": "echo-bot",
-  "version": "0.0.0",
-  "description": "An example LINE bot just to echo messages",
+  "name": "report-bot",
+  "version": "0.1.0",
+  "description": "A Line bot to help report what military service need.",
   "main": "index.js",
   "scripts": {
-    "start": "node ."
+    "start": "node . --unhandled-rejections=none"
   },
   "dependencies": {
     "@line/bot-sdk": "^7.3.0",
