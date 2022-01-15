@@ -74,7 +74,13 @@ async function handleEvent(event) {
     return replyLineMessage(event, result, '註冊完成', '註冊失敗');
 
   } else if (filterNameLists(receivedMessage)) {
-    // TODO
+    const tmp = receivedMessage.split(' ');
+    tmp.shift();  // 丟掉開頭的指令
+    const studentIds = tmp.filter((v, i) => i % 2 === 0);
+    const strNameLists = tmp.filter((v, i) => i % 2 === 1); 
+    
+    let result = await setNameLists(studentIds, strNameLists);
+    return replyLineMessage(event, result, '設定成功', '設定失敗');
   } else if (filterDefaultReport(receivedMessage)) {
 
     let studentId = parseInt(receivedMessage.split(' ')[1]);
@@ -201,8 +207,21 @@ async function setPersonalState(studentIds, strStates) {
   }
 }
 
+async function setNameLists(studentIds, strNameLists) {
+  if (studentIds.length !== strNameLists.length) {
+    return false;
+  }
+
+  const strUpdateValues = studentIds.map((id, i) => `(${id}, '${strNameLists[i]}')`).join(', ');
+  const sqlUpdateDate = 'UPDATE report_content AS r SET name = c.name ' +
+    `FROM (VALUES ${strUpdateValues}) AS c(student_id, name) WHERE c.student_id = r.student_id;`;
+
+  const res = await pgQuery(sqlUpdateDate);
+  return res !== null;
+}
+
 async function updateReportToDB(receivedMessage, studentId) {
-  const sqlUpdateReport = `UPDATE report_content SET content = '${receivedMessage}' WHERE student_id = ${studentId}`;
+  const sqlUpdateReport = `UPDATE report_content SET name = '${receivedMessage}' WHERE student_id = ${studentId}`;
   const res = await pgQuery(sqlUpdateReport);
   return res !== null;
 }

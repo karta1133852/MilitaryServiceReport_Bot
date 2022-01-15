@@ -175,11 +175,12 @@ function writeTextMessage(resPersonsByGroup, pCount) {
   let reportMessage = '';
 
   for (let i = 0; i < pCount; i++) {
-    const person = resPersonsByGroup[i]; 
+    const person = resPersonsByGroup[i];
+    const studentId = ('000' + person.student_id).slice(-3);
     if (person.state !== null) {
-      reportMessage += person.student_id + '\n　' + person.state + '\n';
+      reportMessage += studentId + '\n　' + person.state + '\n';
     } else if (person.content === null) {
-      reportMessage += person.student_id + '\n\n';
+      reportMessage += studentId + '\n\n';
     } else {
       let splitedLines = person.content.trim().split(/\s*[\r\n]+\s*/g);
       reportMessage += splitedLines.shift().trim() + '\n';
