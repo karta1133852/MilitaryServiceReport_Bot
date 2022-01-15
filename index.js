@@ -214,7 +214,7 @@ async function loadDoc() {
       private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
     });
 
-    await doc.loadInfo();
+    //await doc.loadInfo();
     return doc;
 
   } catch (err) {
@@ -230,7 +230,7 @@ async function loadSheet(sheetIndex) {
       await loadDoc();
     }
     
-    //await doc.loadInfo();
+    await doc.loadInfo();
     const sheet = await doc.sheetsByIndex[sheetIndex];
 
     return sheet;
