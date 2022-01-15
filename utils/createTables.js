@@ -5,5 +5,8 @@ const sqlCreateTable = 'CREATE TABLE IF NOT EXISTS report_content (student_id in
   'CREATE TABLE IF NOT EXISTS report_date ( date text PRIMARY KEY NOT NULL );';
 
 (async () => {
-  await pgQuery(sqlCreateTable);
+  const res = await pgQuery(sqlCreateTable);
+  if (res !== null) {
+    console.log('成功建立資料表');
+  }
 })();
