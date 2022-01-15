@@ -13,11 +13,10 @@ const getPgClient = () => {
 }
 
 const pgQuery = async (sql) => {
-  let res;
   const client = getPgClient();
   try {
     client.connect();
-    res = await client.query(sql);
+    const res = await client.query(sql);
     //console.log(res);
 
     return res;

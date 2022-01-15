@@ -34,9 +34,9 @@ async function pushReportMessage() {
 
     // 統整訊息
     const sqlSelectPerson = 'SELECT * FROM report_content ORDER BY student_id ASC;';
-    let resPersons = await pgQuery(sqlSelectDate);
+    const resPersons = await pgQuery(sqlSelectDate);
     const sqlSelectGroup = 'SELECT * FROM group_info ORDER BY start_id ASC;';
-    let resGroups = await pgQuery(sqlSelectDate);
+    const resGroups = await pgQuery(sqlSelectDate);
 
     const resPersonsByGroup = [];
     // 每個群組統整一遍

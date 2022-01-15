@@ -59,12 +59,20 @@ async function handleEvent(event) {
 
     const strDates = receivedMessage.split(' ');
     strDates.shift();
-    let result = await setDateToDB(strDates);
 
+    let result = await setDateToDB(strDates);
     return replyLineMessage(event, result, '日期設定完成', '日期格式錯誤');
 
   } else if (filterGroupRegister(receivedMessage)) {
-    registerGroup();
+
+    let tmp = receivedMessage.split(' ');
+    if (!event.source.groupId) {
+      return client.replyMessage(event.replyToken, { type: 'text', text: '此處並非群組' });
+    }
+
+    let result = await registerGroup(event.source.groupId, parseInt(tmp[1]), parseInt(tmp[2]));
+    return replyLineMessage(event, result, '註冊完成', '註冊失敗');
+
   } else if (filterNameLists(receivedMessage)) {
     // TODO
   } else if (filterDefaultReport(receivedMessage)) {
@@ -141,6 +149,21 @@ function checkDateFormat(strDate) {
   return regex.test(strDate)
 }
 
+async function registerGroup(groupId, startId, endId) {
+  const sqlInsertGroup = `INSERT INTO group_info (group_id, start_id, end_id) VALUES ('${groupId}', ${startId}, ${endId}) ` +
+    'ON CONFLICT (group_id) DO UPDATE SET start_id = EXCLUDED.start_id, ' +
+    'end_id = EXCLUDED.end_id;';
+  const length = endId - startId + 1;
+  // 酷炫的方法
+  const studentIds = [...Array(length + startId).keys()].slice(startId);
+  let strInsertValue = studentIds.map(id => `(${id}, '${groupId}')`).join(', ');
+  const sqlInsertPerson = `INSERT INTO report_content (student_id, group_id) VALUES ${strInsertValue} ` +
+    'ON CONFLICT (student_id) DO UPDATE SET group_id = EXCLUDED.group_id;';
+
+  const res = await pgQuery(sqlInsertGroup + sqlInsertPerson);
+  return res !== null;
+}
+
 // TODO db
 async function getDefaultReport(studentId) {
   let strDefaultReport = '\n目前在家\n預計不出門\n無飲酒';
@@ -180,7 +203,7 @@ async function setPersonalState(studentIds, strStates) {
 
 async function updateReportToDB(receivedMessage, studentId) {
   const sqlUpdateReport = `UPDATE report_content SET content = '${receivedMessage}' WHERE student_id = ${studentId}`;
-  let res = await pgQuery(sqlUpdateReport);
+  const res = await pgQuery(sqlUpdateReport);
   return res !== null;
 }
 
@@ -195,28 +218,11 @@ async function setDateToDB(strDates) {
   }
 
   const strInsertValues = strDates.map(d => `('${d}')`).join(', ');
-  const sqlUpdateDate = 'TRUNCATE TABLE report_date;' +
+  const sqlUpdateDate = 'TRUNCATE TABLE report_date; ' +
     `INSERT INTO report_date (date) VALUES ${strInsertValues};`;
 
-  let res = await pgQuery(sqlUpdateDate);
+  const res = await pgQuery(sqlUpdateDate);
   return res !== null;
-}
-
-async function query(sql) {
-  let res
-  const client = getPgClient();
-  try {
-    client.connect();
-    res = await client.query(sql);
-    //console.log(res);
-
-    return res;
-  } catch (err) {
-    console.log(err);
-    return null;
-  } finally {
-    client.end();
-  }
 }
 
 async function loadDoc() {
