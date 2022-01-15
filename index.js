@@ -90,7 +90,7 @@ function replyLineMessage(event, result, textSuccess, textFail) {
 
 function filterReportMessage(reportMessage) {
   // '000 ~~~~~'
-  const regex = /^[0-9]{3}[ \t].*/;
+  const regex = /^[0-9]{3}.*/;
   return regex.test(reportMessage);
 }
 
