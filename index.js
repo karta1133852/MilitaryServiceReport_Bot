@@ -59,6 +59,10 @@ async function handleEvent(event) {
     } else {
       return client.replyMessage(event.replyToken, { type: 'text', text: '日期格式錯誤' });
     }
+  } else if (filterGroupRegister(reportMessage)) {
+    // TODO
+  } else if (filterNameLists(reportMessage)) {
+    // TODO
   }
 
   return Promise.resolve(null);// client.replyMessage(event.replyToken, echo);
@@ -73,13 +77,21 @@ function isSetDate(reportMessage) {
   return reportMessage.substring(0, 4) === '設定日期';
 }
 
+function filterGroupRegister(reportMessage) {
+  // TODO
+}
+
+function filterNameLists(reportMessage) {
+  // TODO
+}
+
 function checkDateFormat(strDate) {
   const regex = /[0-9]{2}[\D][0-9]{2}$/;
   return regex.test(strDate)
 }
 
 async function recordToSheet(reportMessage) {
-
+  // TODO db
   try {
     const sheet = await loadSheet(0);
     await sheet.loadCells(CELL_RANGE);
@@ -93,7 +105,7 @@ async function recordToSheet(reportMessage) {
 }
 
 async function setDateToSheet(strDates) {
-  
+  // TODO db
   for (let i = 0; i < strDates.length; i++) {
     if (!checkDateFormat(strDates[i])) {
       return false;

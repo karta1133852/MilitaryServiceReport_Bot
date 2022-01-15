@@ -20,6 +20,7 @@ const config = {
   channelSecret: process.env.CHANNEL_SECRET,
 };
 
+// TODO db
 async function pushReportMessage() {
   try {
     // 取得回報日期
@@ -102,6 +103,7 @@ async function loadSheet(sheetIndex) {
   }
 }
 
+// not use
 function writeFlexMessage(sheet) {
   const reportTotalMessage = JSON.parse(JSON.stringify(totalReport));
   for (let i = MIN_NUMBER; i <= MAX_NUMBER; i++) {
@@ -130,6 +132,7 @@ function writeFlexMessage(sheet) {
   return reportTotalMessage;
 }
 
+// TODO db
 function writeTextMessage(sheet) {
   let reportMessage = '';
   for (let i = MIN_NUMBER; i <= MAX_NUMBER; i++) {
