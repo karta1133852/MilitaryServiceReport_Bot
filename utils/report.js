@@ -2,6 +2,7 @@
 
 const line = require('@line/bot-sdk');
 const { GoogleSpreadsheet } = require('google-spreadsheet');
+const { pgQuery } = require('../controllers/postgresController');
 require('dotenv').config()
 
 const totalReport = require('../reportFormat/total.json');
@@ -24,20 +25,35 @@ const config = {
 async function pushReportMessage() {
   try {
     // 取得回報日期
-    const dateSheet = await loadSheet(1);
-    const rows = await dateSheet.getRows();
-    if (!checkDate(rows)) {
+    const sqlSelectDate = 'SELECT date FROM report_date;';
+    let resDates = await pgQuery(sqlSelectDate);
+
+    if (!checkDate(resDates.rows)) {
       return;
     }
 
-    const sheet = await loadSheet(0);
+    // 統整訊息
+    const sqlSelectPerson = 'SELECT * FROM report_content ORDER BY student_id ASC;';
+    let resPersons = await pgQuery(sqlSelectDate);
+    const sqlSelectGroup = 'SELECT * FROM group_info ORDER BY start_id ASC;';
+    let resGroups = await pgQuery(sqlSelectDate);
 
-    await sheet.loadCells(CELL_RANGE);
+    const resPersonsByGroup = [];
+    // 每個群組統整一遍
+    for (let i = 0; i < resGroups.rows.length; i++) {
+      const group = resGroups.rows[i];
+      const startId = group.start_id;
+      const endId = group.end_id;
+      resPersonsByGroup.push(resPersons.rows.filter(p => p.student_id >= startId && p.student_id <= endId))
+      // 檢查是否有特殊狀態
+      //const personalStates = getPersonalState(resPersons);
+      const reportTotalMessage = writeTextMessage(resPersonsByGroup, endId - startId + 1);
+    }
 
-    const personalStates = await getPersonalState();
+    
 
     //const reportTotalMessage = writeFlexMessage(sheet);
-    const reportTotalMessage = writeTextMessage(sheet, personalStates);
+    //const reportTotalMessage = writeTextMessage(sheet, personalStates);
 
     await sheet.clear();
 
@@ -59,10 +75,9 @@ function checkDate(rows) {
   let strTime = date.toISOString();
 
   for (let i = 0; i < rows.length; i++) {
-    const a1 = rows[i].date.split(/[\D]/);
-    const a2 = strTime.split(/[\D]/);
-    if (a1[0] === a2[1] && a1[1] === a2[2]) {
+    if (rows[i].date === strTime.substring(5, 10)) {
       result = true;
+      break;
     }
   }
 
@@ -105,8 +120,10 @@ async function loadSheet(sheetIndex) {
   }
 }
 
-async function getPersonalState() {
-  try {
+function getPersonalState(resPersons) {
+  
+
+  /*try {
     const stateSheet = await loadSheet(3);
     await stateSheet.loadCells(CELL_RANGE);
 
@@ -122,7 +139,7 @@ async function getPersonalState() {
   } catch (err) {
     console.log(err);
     return false;
-  }
+  }*/
 }
 
 // not use
@@ -154,19 +171,17 @@ function writeFlexMessage(sheet) {
   return reportTotalMessage;
 }
 
-// TODO db
-function writeTextMessage(sheet, personalStates) {
+function writeTextMessage(resPersonsByGroup, pCount) {
   let reportMessage = '';
-  console.log(personalStates);
-  for (let i = MIN_NUMBER; i <= MAX_NUMBER; i++) {
-    let message = sheet.getCellByA1('A' + i).value;
-    const personalState = personalStates.find(e => e.studentId === i);
-    if (personalState) {
-      reportMessage += i + '\n　' + personalState.state + '\n';
-    } else if (message === null) {
-      reportMessage += i + '\n\n';
+
+  for (let i = 0; i < pCount; i++) {
+    const person = resPersonsByGroup[i]; 
+    if (person.state !== null) {
+      reportMessage += person.student_id + '\n　' + person.state + '\n';
+    } else if (person.content === null) {
+      reportMessage += person.student_id + '\n\n';
     } else {
-      let splitedLines = message.trim().split(/\s*[\r\n]+\s*/g);
+      let splitedLines = person.content.trim().split(/\s*[\r\n]+\s*/g);
       reportMessage += splitedLines.shift().trim() + '\n';
       splitedLines.forEach(m => {
         if (m !== null) {
@@ -175,6 +190,7 @@ function writeTextMessage(sheet, personalStates) {
       });
     }
   }
+
 
   return {
     type: 'text',
