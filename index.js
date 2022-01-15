@@ -64,7 +64,9 @@ async function handleEvent(event) {
   } else if (filterNameLists(reportMessage)) {
     // TODO
   } else if (filterDefaultReport(reportMessage)) {
-    // TODO
+    let strDefaultReport = getDefaultReport(reportMessage.split(' ')[1]);
+    await reportToSheet(strDefaultReport);
+    return client.replyMessage(event.replyToken, { type: 'text', text: strDefaultReport });
   }
 
   return Promise.resolve(null);// client.replyMessage(event.replyToken, echo);
@@ -103,6 +105,20 @@ function filterDefaultReport(reportMessage) {
 function checkDateFormat(strDate) {
   const regex = /[0-9]{2}[\D][0-9]{2}$/;
   return regex.test(strDate)
+}
+
+// TODO db
+async function getDefaultReport(studentId) {
+  let strDefaultReport = '\n目前在家\n預計不出門\n無飲酒';
+  try {
+    const sheet = await loadSheet(3);
+    await sheet.loadCells(CELL_RANGE);
+    strDefaultReport = studentId + sheet.getCellByA1('A'+ studentId).value + strDefaultReport;
+    
+    return strDefaultReport;
+  } catch (err) {
+    console.log(err)
+  }
 }
 
 async function reportToSheet(reportMessage) {
