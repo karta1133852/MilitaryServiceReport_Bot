@@ -6,7 +6,7 @@ const { GoogleSpreadsheet } = require('google-spreadsheet');
 require('dotenv').config()
 
 const SHEET_ID = process.env.SHEET_ID;
-const CELL_RANGE = 'A106:A118'
+const CELL_RANGE = 'A106:B118'
 
 let doc = null;
 
@@ -53,12 +53,7 @@ async function handleEvent(event) {
     strDates.shift();
 
     let result = await setDateToSheet(strDates);
-
-    if (result) {
-      return client.replyMessage(event.replyToken, { type: 'text', text: '設定完成' });
-    } else {
-      return client.replyMessage(event.replyToken, { type: 'text', text: '日期格式錯誤' });
-    }
+    return replyLineMessage(event, result, '設定完成', '日期格式錯誤');
   } else if (filterGroupRegister(reportMessage)) {
     // TODO
   } else if (filterNameLists(reportMessage)) {
@@ -66,46 +61,71 @@ async function handleEvent(event) {
   } else if (filterDefaultReport(reportMessage)) {
     let studentId = parseInt(reportMessage.split(' ')[1]);
     let strDefaultReport = await getDefaultReport(studentId);
-
+    if (strDefaultReport === false) {
+      return client.replyMessage(event.replyToken, { type: 'text', text: '錯誤' });
+    }
     await reportToSheet(strDefaultReport, studentId);
     return client.replyMessage(event.replyToken, { type: 'text', text: strDefaultReport });
+  } else if (filterPersonalState(reportMessage)) {
+    const tmp = reportMessage.split(' ');
+    tmp.shift();  // 丟掉開頭的指令
+    const studentIds = tmp.filter((v, i) => i % 2 === 0);
+    const strStates = tmp.filter((v, i) => i % 2 === 1); 
+    
+    let result = await setPersonalState(studentIds, strStates);
+    return replyLineMessage(event, result, '設定成功', '設定失敗');
   }
 
-  return Promise.resolve(null);// client.replyMessage(event.replyToken, echo);
+  return Promise.resolve(null);
+}
+
+// 對指令進行回覆
+function replyLineMessage(event, result, textSuccess, textFail) {
+  if (result) {
+    return client.replyMessage(event.replyToken, { type: 'text', text: textSuccess });
+  } else {
+    return client.replyMessage(event.replyToken, { type: 'text', text: textFail });
+  }
 }
 
 function filterReportMessage(reportMessage) {
   // '000 ~~~~~'
-  const regex = /^[0-9]{3}.*/;
+  const regex = /^[0-9]{3}[ \t].*/;
   return regex.test(reportMessage);
 }
 
 function isSetDate(reportMessage) {
   // '設定日期 ~~~~~'
-  const regex = /^\u8a2d\u5b9a\u65e5\u671f[ \t]/;
+  const regex = /^\u8a2d\u5b9a\u65e5\u671f[ \t].*/;
   return regex.test(reportMessage);
 }
 
 function filterGroupRegister(reportMessage) {
   // '註冊群組 000 000'
-  const regex = /^\u8a3b\u518a\u7fa4\u7d44[ \t][0-9]{3}[ \t][0-9]{3}/;
+  const regex = /^\u8a3b\u518a\u7fa4\u7d44[ \t][0-9]{3}[ \t][0-9]{3}$/;
   return regex.test(reportMessage);
 }
 
 function filterNameLists(reportMessage) {
   // '設定姓名 000 XXX'
-  const regex = /^\u8a2d\u5b9a\u59d3\u540d[ \t]/;
+  const regex = /^\u8a2d\u5b9a\u59d3\u540d/;
   return regex.test(reportMessage);
 }
 
 function filterDefaultReport(reportMessage) {
   // '預設回報格式 000'
-  const regex = /^\u9810\u8a2d\u56de\u5831\u683c\u5f0f[ \t][0-9]{3}/;
+  const regex = /^\u9810\u8a2d\u56de\u5831\u683c\u5f0f[ \t][0-9]{3}$/;
+  return regex.test(reportMessage);
+}
+
+function filterPersonalState(reportMessage) {
+  // '固定狀態 000 ~~~~~'
+  const regex = /^\u56fa\u5b9a\u72c0\u614b[ \t][0-9]{3}[ \t].*/;
   return regex.test(reportMessage);
 }
 
 function checkDateFormat(strDate) {
-  const regex = /[0-9]{2}[\D][0-9]{2}$/;
+  const regex = /^[0-9]{2}[\D][0-9]{2}$/;
   return regex.test(strDate)
 }
 
@@ -120,6 +140,29 @@ async function getDefaultReport(studentId) {
     return strDefaultReport;
   } catch (err) {
     console.log(err)
+    return false;
+  }
+}
+
+// TODO db
+async function setPersonalState(studentIds, strStates) {
+  try {
+    if (studentIds.length !== strStates.length) {
+      return false;
+    }
+    
+    const sheet = await loadSheet(3);
+    await sheet.loadCells(CELL_RANGE);
+
+    for (let i = 0; i < studentIds.length; i++) {
+      sheet.getCellByA1('B'+ studentIds[i]).value = strStates[i];
+    }
+
+    await sheet.saveUpdatedCells();
+    return true;
+  } catch (err) {
+    console.log(err)
+    return false;
   }
 }
 

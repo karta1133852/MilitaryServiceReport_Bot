@@ -9,7 +9,7 @@ const personReport = require('../reportFormat/person.json');
 const singleLine = require('../reportFormat/singleLine.json');
 
 const SHEET_ID = process.env.SHEET_ID;
-const CELL_RANGE = 'A106:A118'
+const CELL_RANGE = 'A106:B118'
 const MIN_NUMBER = 106, MAX_NUMBER = 118;
 
 let doc = null;
@@ -34,8 +34,10 @@ async function pushReportMessage() {
 
     await sheet.loadCells(CELL_RANGE);
 
+    const personalStates = await getPersonalState();
+
     //const reportTotalMessage = writeFlexMessage(sheet);
-    const reportTotalMessage = writeTextMessage(sheet);
+    const reportTotalMessage = writeTextMessage(sheet, personalStates);
 
     await sheet.clear();
 
@@ -103,6 +105,26 @@ async function loadSheet(sheetIndex) {
   }
 }
 
+async function getPersonalState() {
+  try {
+    const stateSheet = await loadSheet(3);
+    await stateSheet.loadCells(CELL_RANGE);
+
+    const personalStates = [];
+    for (let i = MIN_NUMBER; i <= MAX_NUMBER; i++) {
+      let strState = stateSheet.getCellByA1('B' + i).value;
+      if (stateSheet.getCellByA1('B' + i).value !== null) {
+        personalStates.push({ studentId: i, state: strState });
+      }
+    }
+
+    return personalStates;
+  } catch (err) {
+    console.log(err);
+    return false;
+  }
+}
+
 // not use
 function writeFlexMessage(sheet) {
   const reportTotalMessage = JSON.parse(JSON.stringify(totalReport));
@@ -133,11 +155,15 @@ function writeFlexMessage(sheet) {
 }
 
 // TODO db
-function writeTextMessage(sheet) {
+function writeTextMessage(sheet, personalStates) {
   let reportMessage = '';
+  console.log(personalStates);
   for (let i = MIN_NUMBER; i <= MAX_NUMBER; i++) {
     let message = sheet.getCellByA1('A' + i).value;
-    if (message === null) {
+    const personalState = personalStates.find(e => e.studentId === i);
+    if (personalState) {
+      reportMessage += i + '\n　' + personalState.state + '\n';
+    } else if (message === null) {
       reportMessage += i + '\n\n';
     } else {
       let splitedLines = message.trim().split(/\s*[\r\n]+\s*/g);
