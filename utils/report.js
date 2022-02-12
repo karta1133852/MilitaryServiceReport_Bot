@@ -38,21 +38,25 @@ async function pushReportMessage() {
     // 統整訊息
     const sqlSelectPerson = 'SELECT * FROM report_content ORDER BY student_id ASC;';
     const resPersons = await pgQuery(sqlSelectPerson);
-    const sqlSelectGroup = 'SELECT * FROM group_info ORDER BY start_id ASC;';
-    const resGroups = await pgQuery(sqlSelectGroup);
+    //const sqlSelectGroup = 'SELECT * FROM group_info ORDER BY start_id ASC;';
+    //const resGroups = await pgQuery(sqlSelectGroup);
+
+    // 以群組拆分
+    const groups = resPersons.rows.reduce((g, p) => {
+      const groupId = p.group_id;
+      g[groupId] = g[groupId] || [];
+      g[groupId].push(p);
+      return g;
+    }, {}); // 初始化 g
 
     // 每個群組統整一遍
-    for (let i = 0; i < resGroups.rows.length; i++) {
-      const group = resGroups.rows[i];
-      const startId = group.start_id;
-      const endId = group.end_id;
-
-      const resPersonsByGroup = resPersons.rows.filter(p => p.student_id >= startId && p.student_id <= endId);
-      const reportTotalMessage = writeTextMessage(resPersonsByGroup, endId - startId + 1);
+    for (let groupId in groups) {
+      console.log(groupId);
+      const reportTotalMessage = writeTextMessage(groups[groupId]);
       // 推送訊息
-      client.pushMessage(group.group_id, reportTotalMessage);
+      client.pushMessage(groupId, reportTotalMessage);
     }
-
+    
     // 清空所有回報紀錄
     const sqlClearContent = 'UPDATE report_content SET content = NULL;';
     const res = await pgQuery(sqlClearContent);
@@ -165,11 +169,11 @@ function writeFlexMessage(sheet) {
   return reportTotalMessage;
 }
 
-function writeTextMessage(resPersonsByGroup, pCount) {
-  let reportMessage = '';
+function writeTextMessage(group) {
+  let reportMessage = '統整回報：\n'; // 防止其他人修改重傳時覆蓋第一人的紀錄
 
-  for (let i = 0; i < pCount; i++) {
-    const person = resPersonsByGroup[i];
+  for (let i = 0; i < group.length; i++) {
+    const person = group[i];
     const studentId = ('000' + person.student_id).slice(-3);
     if (person.state !== null) {
       reportMessage += studentId + '\n　' + person.state + '\n';
